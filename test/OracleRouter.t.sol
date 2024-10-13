@@ -3,8 +3,11 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "../src/OracleRouter.sol";
-// Remove or comment out this line if the interface is already imported in OracleRouter.sol
-// import "../src/interfaces/AggregatorV3Interface.sol";
+import "../src/interfaces/chainlink/AggregatorV3Interface.sol";
+import "../src/utils/sDAIFeed.sol";
+import "../src/utils/ERC4626Feed.sol";
+import {console} from "forge-std/console.sol";
+
 
 contract OracleRouterTest is Test {
     OracleRouter public oracleRouter;
@@ -22,58 +25,137 @@ contract OracleRouterTest is Test {
     // Fork block number
     uint256 constant FORK_BLOCK_NUMBER = 20911501;
 
+    // Add sDAI and its feed address
+    address constant SDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
+    address constant SDAI_USD_FEED = 0xb9E6DBFa4De19CCed908BcbFe1d015190678AB5f;
+    address constant STEAKHOUSE_USDC = 0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB;
+    address constant STEAKHOUSE_USDT = 0xbEef047a543E45807105E51A8BBEFCc5950fcfBa;
+
+    sDAIFeed public sDAIFeedContract;
+    ERC4626Feed public steakhouseUSDCFeed;
+    ERC4626Feed public steakhouseUSDTFeed;  // Add this line
+
+    error OwnableUnauthorizedAccount(address account);
+
+
     function setUp() public {
         // Fork Ethereum mainnet at the specified block number
-        vm.createSelectFork("mainnet", FORK_BLOCK_NUMBER);
+        vm.createSelectFork(vm.envString("MainnetAlchemyAPI"), FORK_BLOCK_NUMBER);
 
         owner = address(this);
         addr1 = address(0x1);
         
         oracleRouter = new OracleRouter(owner);
 
+        // Deploy sDAIFeed contract
+        sDAIFeedContract = new sDAIFeed(SDAI_USD_FEED);
+
+        // Deploy ERC4626Feed contract for STEAKHOUSE_USDC
+        steakhouseUSDCFeed = new ERC4626Feed(
+            address(oracleRouter),
+            STEAKHOUSE_USDC,
+            "STEAKHOUSE_USDC Feed"
+        );
+
+        // Deploy ERC4626Feed contract for STEAKHOUSE_USDT
+        steakhouseUSDTFeed = new ERC4626Feed(
+            address(oracleRouter),
+            STEAKHOUSE_USDT,
+            "STEAKHOUSE_USDT Feed"
+        );
+
         // Add feeds for testing
-        oracleRouter.addFeed(USDC, USDC_USD_FEED, 86400); // 1 day staleness
-        oracleRouter.addFeed(DAI, DAI_USD_FEED, 3600); // 1 hour staleness
-        oracleRouter.addFeed(USDT, USDT_USD_FEED, 86400); // 1 day staleness
+        uint8 usdcDecimals = AggregatorV3Interface(USDC_USD_FEED).decimals();
+        uint8 daiDecimals = AggregatorV3Interface(DAI_USD_FEED).decimals();
+        uint8 usdtDecimals = AggregatorV3Interface(USDT_USD_FEED).decimals();
+
+        oracleRouter.addFeed(USDC, USDC_USD_FEED, 86400, usdcDecimals); // 1 day staleness
+        oracleRouter.addFeed(DAI, DAI_USD_FEED, 3600, daiDecimals); // 1 hour staleness
+        oracleRouter.addFeed(USDT, USDT_USD_FEED, 86400, usdtDecimals); // 1 day staleness
+
+        // Add sDAI feed
+        uint8 sDAIDecimals = AggregatorV3Interface(address(sDAIFeedContract)).decimals();
+        oracleRouter.addFeed(SDAI, address(sDAIFeedContract), 86400, sDAIDecimals); // 1 day staleness
+
+        // Add STEAKHOUSE_USDC feed
+        uint8 steakhouseUSDCDecimals = steakhouseUSDCFeed.decimals();
+        oracleRouter.addFeed(STEAKHOUSE_USDC, address(steakhouseUSDCFeed), 86400, steakhouseUSDCDecimals); // 1 day staleness
+
+        // Add STEAKHOUSE_USDT feed
+        uint8 steakhouseUSDTDecimals = steakhouseUSDTFeed.decimals();
+        oracleRouter.addFeed(STEAKHOUSE_USDT, address(steakhouseUSDTFeed), 86400, steakhouseUSDTDecimals); // 1 day staleness
     }
 
-    function testOwnership() public {
+    function testOwnership() public view {
         assertEq(oracleRouter.owner(), owner);
     }
 
     function testOnlyOwnerCanAddFeed() public {
+        uint8 decimals = AggregatorV3Interface(USDC_USD_FEED).decimals();
         // Owner should be able to add a feed
-        oracleRouter.addFeed(USDC, USDC_USD_FEED, 86400);
+        oracleRouter.addFeed(USDC, USDC_USD_FEED, 86400, decimals);
 
         // Non-owner should not be able to add a feed
         vm.prank(addr1);
-        vm.expectRevert("OwnableUnauthorizedAccount");
-        oracleRouter.addFeed(DAI, DAI_USD_FEED, 3600);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, addr1));
+        oracleRouter.addFeed(DAI, DAI_USD_FEED, 3600, decimals);
     }
 
-    function testPrices() public {
+    function testUSDCPrice() public view {
         uint256 usdcPrice = oracleRouter.price(USDC);
-        uint256 daiPrice = oracleRouter.price(DAI);
-        uint256 usdtPrice = oracleRouter.price(USDT);
-
         console.log("USDC price:", usdcPrice);
-        console.log("DAI price:", daiPrice);
-        console.log("USDT price:", usdtPrice);
 
-        // Check USDC price
         assertTrue(usdcPrice > 0);
         assertTrue(usdcPrice <= 1.1e18); // MAX_DRIFT
         assertTrue(usdcPrice >= 0.9e18); // MIN_DRIFT
+    }
 
-        // Check DAI price
+    function testDAIPrice() public view {
+        uint256 daiPrice = oracleRouter.price(DAI);
+        console.log("DAI price:", daiPrice);
+
         assertTrue(daiPrice > 0);
         assertTrue(daiPrice <= 1.1e18); // MAX_DRIFT
         assertTrue(daiPrice >= 0.9e18); // MIN_DRIFT
+    }
 
-        // Check USDT price
+    function testUSDTPrice() public view {
+        uint256 usdtPrice = oracleRouter.price(USDT);
+        console.log("USDT price:", usdtPrice);
+
         assertTrue(usdtPrice > 0);
         assertTrue(usdtPrice <= 1.1e18); // MAX_DRIFT
         assertTrue(usdtPrice >= 0.9e18); // MIN_DRIFT
+    }
+
+    function testSDAIPrice() public view {
+        uint256 sDAIPrice = oracleRouter.price(SDAI);
+        console.log("sDAI price:", sDAIPrice);
+
+        assertTrue(sDAIPrice > 0);
+        // Add more specific assertions for sDAI if needed
+    }
+
+    function testSteakhouseUSDCPrice() public view {
+        uint256 steakhouseUSDCPrice = oracleRouter.price(STEAKHOUSE_USDC);
+        console.log("STEAKHOUSE_USDC price:", steakhouseUSDCPrice);
+
+        assertTrue(steakhouseUSDCPrice > 0);
+        // Note: The price range for an ERC4626 token might be different from stablecoins
+        // Adjust these assertions based on the expected behavior of STEAKHOUSE_USDC
+        assertTrue(steakhouseUSDCPrice <= 1.5e18); // Adjust MAX_DRIFT as needed
+        assertTrue(steakhouseUSDCPrice >= 0.5e18); // Adjust MIN_DRIFT as needed
+    }
+
+    function testSteakhouseUSDTPrice() public view {
+        uint256 steakhouseUSDTPrice = oracleRouter.price(STEAKHOUSE_USDT);
+        console.log("STEAKHOUSE_USDT price:", steakhouseUSDTPrice);
+
+        assertTrue(steakhouseUSDTPrice > 0);
+        // Note: The price range for an ERC4626 token might be different from stablecoins
+        // Adjust these assertions based on the expected behavior of STEAKHOUSE_USDT
+        assertTrue(steakhouseUSDTPrice <= 1.5e18); // Adjust MAX_DRIFT as needed
+        assertTrue(steakhouseUSDTPrice >= 0.5e18); // Adjust MIN_DRIFT as needed
     }
 
     function testUnsupportedAsset() public {

@@ -12,7 +12,7 @@ contract OracleRouterTest is OracleRouter {
         // Any additional initialization logic can go here
     }
 
-    function priceUnfiltered(address asset) public view returns (int256) { 
+    function priceUnfiltered(address asset) public view returns (int256) {
         FeedInfo storage feedInfo = tokenToFeed[asset];
         address _feed = feedInfo.feedAddress;
         (, int256 _iprice, , uint256 updatedAt, ) = AggregatorV3Interface(_feed)
@@ -22,6 +22,7 @@ contract OracleRouterTest is OracleRouter {
 
     function priceScaled(address asset) public view returns (uint256) {
         FeedInfo storage feedInfo = tokenToFeed[asset];
-        return priceUnfiltered(asset).toUint256().scaleBy(18, feedInfo.decimals);
+        return
+            priceUnfiltered(asset).toUint256().scaleBy(18, feedInfo.decimals);
     }
 }
