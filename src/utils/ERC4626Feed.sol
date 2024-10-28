@@ -5,10 +5,14 @@ import {IERC4626} from "../interfaces/IERC4626.sol";
 import {OracleRouter} from "../OracleRouter.sol";
 import {AggregatorV3Interface} from "../interfaces/chainlink/AggregatorV3Interface.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+// smart contract to provide a price feed (in USD denomination) for an ERC4626 vault
 contract ERC4626Feed is AggregatorV3Interface {
 
+    // oracle router to get the price of the underlying asset
     OracleRouter public immutable oracleRouter;
+    // the corresponding ERC4626 vault
     IERC4626 public immutable vault;
+    // the underlying asset of the vault
     address public immutable underlyingAsset;
 
     uint8 private immutable _decimals;
