@@ -38,7 +38,8 @@ contract VaultStorage {
     address[] internal allAssets;
 
     mapping(address => address) public ltTokenToAsset;
+    /// @dev amount of asset we want to keep in the vault to cover for fast redemption
+    mapping(address => uint256) public minimalAmountInVault;
 
-    /// @dev Address of the bentoToken. eg bentoUSD .
-    // slither-disable-next-line uninitialized-state
+    mapping(address => address) public assetToStrategy;
 }

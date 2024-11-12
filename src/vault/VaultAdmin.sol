@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 /**
  * @title bentoToken VaultAdmin contract
  * @notice The VaultAdmin contract makes configuration and admin calls on the vault.
- * @author Modified from Origin Protocol Inc by Le Anh Dung
+ * @author Le Anh Dung
  */
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -120,5 +120,9 @@ contract VaultAdmin is VaultStorage {
         totalWeight = totalWeight + _newWeight - _oldWeight;
         assets[_asset].weight = _newWeight;
         emit AssetWeightChanged(_asset, _oldWeight, _newWeight);
+    }
+
+    function setMinimalAmountInVault(address _asset, uint256 _amount) external onlyGovernor {
+        minimalAmountInVault[_asset] = _amount;
     }
 }

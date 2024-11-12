@@ -1,24 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-/**
- * @title BentoToken VaultCore contract
- * @notice The Vault contract stores assets. On a deposit, BentoTokens will be minted
-           and sent to the depositor. On a withdrawal, BentoTokens will be burned and
-           assets will be sent to the withdrawer. 
- * @author Le Anh Dung
- */
-
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import {StableMath} from "../utils/StableMath.sol";
 import {IOracle} from "../interfaces/IOracle.sol";
-
 import {VaultAdmin} from "./VaultAdmin.sol";
 import {BentoUSD} from "../BentoUSD.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
 
-contract VaultCore is VaultAdmin {
+contract VaultCore is Initializable, VaultAdmin {
     using SafeERC20 for IERC20;
     using StableMath for uint256;
     uint256 public constant deviationTolerance = 1; // in percentage
@@ -30,7 +23,29 @@ contract VaultCore is VaultAdmin {
         uint256 amount
     );
 
+    event AssetAllocated(
+        address asset,
+        address strategy,
+        uint256 amount
+    );
+
     error SwapFailed(string reason);
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
+     * @notice Initialize the VaultCore contract
+     * @param _governor Address of the governor
+     */
+    function initialize(
+        address _governor
+    ) public initializer {
+        require(_governor != address(0), "Governor cannot be zero address");
+        governor = _governor;
+    }
 
     /**
      * @notice Deposit a supported asset and mint BentoUSD.
@@ -122,6 +137,12 @@ contract VaultCore is VaultAdmin {
         BentoUSD(bentoUSD).mint(msg.sender, totalValueOfBasket);
     }
 
+    /**
+     * @notice Mint BentoUSD by depositing a proportional basket of all supported assets
+     * @dev This function mints BentoUSD by accepting deposits of all supported assets in their target weights
+     * @param _amount The total amount of BentoUSD to mint
+     * @param _minimumBentoUSDAmount The minimum amount of BentoUSD to receive (slippage protection)
+     */
     function mintBasket(
         uint256 _amount,
         uint256 _minimumBentoUSDAmount
@@ -189,5 +210,36 @@ contract VaultCore is VaultAdmin {
 
     function _redeemWithWaitingPeriod(uint256 _amount) internal {
         revert("VaultCore: redeemWithWaitingPeriod is not implemented");
+    }
+
+    /**
+     * @dev Allocate unallocated funds on Vault to strategies.
+     **/
+    function _allocate() internal virtual {
+        uint256 allAssetsLength = allAssets.length;
+        for (uint256 i = 0; i < allAssetsLength; ++i) {
+            IERC20 asset = IERC20(allAssets[i]);
+            uint256 assetBalance = asset.balanceOf(address(this));
+            uint256 minimalAmount = minimalAmountInVault[address(asset)];
+            if (assetBalance < minimalAmount) continue;
+            // Multiply the balance by the vault buffer modifier and truncate
+            // to the scale of the asset decimals
+            uint256 allocateAmount = assetBalance - minimalAmount;
+
+            address depositStrategyAddr = assetToStrategy[address(asset)];
+
+            if (depositStrategyAddr != address(0) && allocateAmount > 0) {
+                IStrategy strategy = IStrategy(depositStrategyAddr);
+                // Transfer asset to Strategy and call deposit method to
+                // mint or take required action
+                asset.safeTransfer(address(strategy), allocateAmount);
+                strategy.deposit(address(asset), allocateAmount);
+                emit AssetAllocated(
+                    address(asset),
+                    depositStrategyAddr,
+                    allocateAmount
+                );
+            }
+        }
     }
 }
