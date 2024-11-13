@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 import {StableMath} from "../utils/StableMath.sol";
 import {IOracle} from "../interfaces/IOracle.sol";
@@ -132,7 +133,14 @@ contract VaultCore is Initializable, VaultAdmin {
 
         require(
             totalValueOfBasket > _minimumBentoUSDAmount,
-            "VaultCore: slippage or price deviation too high"
+            string(
+                abi.encodePacked(
+                    "VaultCore: price deviation too high. Total value: ",
+                    Strings.toString(totalValueOfBasket),
+                    ", Minimum required: ",
+                    Strings.toString(_minimumBentoUSDAmount)
+                )
+            )
         );
         BentoUSD(bentoUSD).mint(msg.sender, totalValueOfBasket);
     }
@@ -150,8 +158,18 @@ contract VaultCore is Initializable, VaultAdmin {
         uint256 totalValueOfBasket = 0;
         for (uint256 i = 0; i < allAssets.length; i++) {
             address assetAddress = allAssets[i];
+            uint8 assetDecimals = assets[assetAddress].decimals;
+            // amounttoDeposit is assumed to have 18 decimals
             uint256 amountToDeposit = (_amount * assets[assetAddress].weight) /
                 totalWeight;
+            uint256 amountToDepositWithDecimals = amountToDeposit;
+            // we need to shift the decimals places
+            if (assetDecimals < 18) {
+                amountToDepositWithDecimals = amountToDeposit / 10 ** (18 - assetDecimals);
+            } else if (assetDecimals > 18) {
+                amountToDepositWithDecimals = amountToDeposit * 10 ** (assetDecimals - 18);
+            }
+            IERC20(assetAddress).safeTransferFrom(msg.sender, address(this), amountToDepositWithDecimals);
 
             uint256 assetPrice = IOracle(oracleRouter).price(assetAddress);
             if (assetPrice > 1e18) {
@@ -161,7 +179,14 @@ contract VaultCore is Initializable, VaultAdmin {
         }
         require(
             totalValueOfBasket > _minimumBentoUSDAmount,
-            "VaultCore: price deviation too high"
+            string(
+        abi.encodePacked(
+            "VaultCore: price deviation too high. Total value: ",
+            Strings.toString(totalValueOfBasket),
+            ", Minimum required: ",
+            Strings.toString(_minimumBentoUSDAmount)
+        )
+    )
         );
         BentoUSD(bentoUSD).mint(msg.sender, totalValueOfBasket);
     }
