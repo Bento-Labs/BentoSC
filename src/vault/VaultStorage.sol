@@ -42,4 +42,12 @@ contract VaultStorage {
     mapping(address => uint256) public minimalAmountInVault;
 
     mapping(address => address) public assetToStrategy;
+
+    function getWeights() public view returns (uint8[] memory) {
+        uint8[] memory weights = new uint8[](allAssets.length);
+        for (uint256 i = 0; i < allAssets.length; i++) {
+            weights[i] = assets[allAssets[i]].weight;
+        }
+        return weights;
+    }
 }
