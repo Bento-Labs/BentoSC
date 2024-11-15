@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "../src/vault/VaultCore.sol";
 import "../src/BentoUSD.sol";
 import "../src/OracleRouter.sol";
+import "../src/strategy/Generalized4626Strategy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -34,6 +35,12 @@ contract VaultCoreTest is Test {
     address constant DAI_USD_FEED = 0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9;
     address constant USDT_USD_FEED = 0x3E7d1eAB13ad0104d2750B8863b489D65364e32D;
     address constant USDE_USD_FEED = 0xa569d910839Ae8865Da8F8e70FfFb0cBA869F961;
+
+    // external protocol vault or share token
+    address constant sDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
+    address constant sUSDC = 0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB;
+    address constant sUSDT = 0xbEef047a543E45807105E51A8BBEFCc5950fcfBa;
+    address constant sUSDe = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
 
     function setUp() public {
         // Fork mainnet
@@ -153,11 +160,60 @@ contract VaultCoreTest is Test {
         console.log("USDT deposited: %s", usdtDeposited / 1e6);
         console.log("USDe deposited: %s", usdeDeposited / 1e18);
 
-        assertApproxEqRel(usdcDeposited * 1e12, mintAmount * 25e18 / 100, 0.01e18, "USDC deposit proportion incorrect");
+        assertApproxEqRel(usdcDeposited * 1e12, mintAmount * 25 / 100, 0.01e18, "USDC deposit proportion incorrect");
         assertApproxEqRel(daiDeposited, mintAmount * 25 / 100, 0.01e18, "DAI deposit proportion incorrect");
-        assertApproxEqRel(usdtDeposited * 1e12, mintAmount * 25e18 / 100, 0.01e18, "USDT deposit proportion incorrect");
+        assertApproxEqRel(usdtDeposited * 1e12, mintAmount * 25 / 100, 0.01e18, "USDT deposit proportion incorrect");
         assertApproxEqRel(usdeDeposited, mintAmount * 25 / 100, 0.01e18, "USDe deposit proportion incorrect");
 
         vm.stopPrank();
     }
+
+    function testSetupStrategies() public {
+        // check that the underlying asset stored inside share token contract is correct
+        assertEq(IERC4626(sUSDC).asset(), USDC, "sUSDC underlying asset incorrect");
+        assertEq(IERC4626(sDAI).asset(), DAI, "sDAI underlying asset incorrect");
+        assertEq(IERC4626(sUSDT).asset(), USDT, "sUSDT underlying asset incorrect");
+        assertEq(IERC4626(sUSDe).asset(), USDE, "sUSDe underlying asset incorrect");
+
+        // Deploy strategies for each asset
+        Generalized4626Strategy usdcStrategy = new Generalized4626Strategy(
+            USDC,                // asset token
+            sUSDC,               // sUSDC address
+            address(vault)       // admin
+        );
+        
+        Generalized4626Strategy daiStrategy = new Generalized4626Strategy(
+            DAI,                // asset token
+            sDAI,               // sDAI address
+            address(vault)       // admin
+        );
+        
+        Generalized4626Strategy usdtStrategy = new Generalized4626Strategy(
+            USDT,               // asset token
+            sUSDT,               // sUSDT address
+            address(vault)       // admin
+        );
+        
+        Generalized4626Strategy usdeStrategy = new Generalized4626Strategy(
+            USDE,               // asset token
+            sUSDe,               // sUSDe address
+            address(vault)       // admin
+        );
+
+        // Set strategies in vault
+        vm.startPrank(owner);
+        vault.setAssetStrategy(USDC, address(usdcStrategy));
+        vault.setAssetStrategy(DAI, address(daiStrategy));
+        vault.setAssetStrategy(USDT, address(usdtStrategy));
+        vault.setAssetStrategy(USDE, address(usdeStrategy));
+        vm.stopPrank();
+
+        // Verify strategies are set correctly
+        assertEq(vault.getAssetStrategy(USDC), address(usdcStrategy), "USDC strategy not set correctly");
+        assertEq(vault.getAssetStrategy(DAI), address(daiStrategy), "DAI strategy not set correctly");
+        assertEq(vault.getAssetStrategy(USDT), address(usdtStrategy), "USDT strategy not set correctly");
+        assertEq(vault.getAssetStrategy(USDE), address(usdeStrategy), "USDE strategy not set correctly");
+    }
+
+    
 }

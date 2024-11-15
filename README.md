@@ -64,3 +64,7 @@ $ forge --help
 $ anvil --help
 $ cast --help
 ```
+
+### Default initial strategies
+- DAI: Generalized4626Strategy
+
