@@ -2,14 +2,9 @@
 pragma solidity ^0.8.22;
 
 import {Script} from "forge-std/Script.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {CustomERC20} from "../src/utils/CustomERC20.sol";
 import {console} from "forge-std/console.sol";
 
-contract CustomERC20 is ERC20 {
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
-        _mint(msg.sender, 1_000_000_000_000 * 10**decimals()); // Mint 1 trillion tokens
-    }
-}
 
 contract DeployERC20 is Script {
     function run() external {
@@ -20,8 +15,8 @@ contract DeployERC20 is Script {
         console.log("Deploying with address:", owner);
         console.log("deployer balance is:", owner.balance, "wei");
 
-        string memory name = "test USDT";
-        string memory symbol = "USDT";
+        string memory name = "test USDe";
+        string memory symbol = "USDe";
 
         console.log("Deploying Custom name:", name, "symbol:", symbol);
 
