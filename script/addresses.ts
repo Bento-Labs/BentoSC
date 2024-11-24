@@ -8,5 +8,11 @@ export const addresses = {
         "DAI_USD_FEED": "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9",
         "USDC_USD_FEED": "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6",
         "USDT_USD_FEED": "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D"
+    },
+    "sepolia": {
+        "DAI": "0x6982508145454ce325ddbe47a25d4ec6d4baf8d8",
+        "USDC": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+        "USDT": "0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0",
+        
     }
 }

@@ -237,6 +237,10 @@ contract VaultCore is Initializable, VaultAdmin {
         revert("VaultCore: redeemWithWaitingPeriod is not implemented");
     }
 
+    function allocate() external onlyGovernor {
+        _allocate();
+    }
+
     /**
      * @dev Allocate unallocated funds on Vault to strategies.
      **/

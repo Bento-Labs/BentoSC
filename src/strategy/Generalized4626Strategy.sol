@@ -9,6 +9,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import "forge-std/console.sol";
+
 
 contract Generalized4626Strategy {
     using SafeERC20 for IERC20;
@@ -30,7 +32,7 @@ contract Generalized4626Strategy {
         shareToken = _shareToken;
         assetToken = _assetToken;
         admin = _admin;
-        admin = _admin;
+        IERC20(assetToken).safeIncreaseAllowance(shareToken, type(uint256).max);
     }
 
     modifier onlyAdmin() {
@@ -46,7 +48,9 @@ contract Generalized4626Strategy {
         external
         onlyAdmin
     {
-        IERC4626(shareToken).deposit(_amount, admin);
+        uint receivedShares = IERC4626(shareToken).deposit(_amount, admin);
+        console.log("Received shares:", receivedShares);
+        console.log("send to admin:", admin);
     }
 
     /**

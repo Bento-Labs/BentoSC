@@ -125,4 +125,8 @@ contract VaultAdmin is VaultStorage {
     function setMinimalAmountInVault(address _asset, uint256 _amount) external onlyGovernor {
         minimalAmountInVault[_asset] = _amount;
     }
+
+    function setStrategy(address _asset, address _strategy) external onlyGovernor {
+        assetToStrategy[_asset] = _strategy;
+    }
 }

@@ -74,6 +74,8 @@ contract VaultCoreTest is Test {
             address(proxyAdmin),
             initData
         );
+
+        console.log("VaultCore proxy address:", address(proxy));
         console.log("Proxy deployed");
 
         vault = VaultCore(address(proxy));
@@ -202,17 +204,81 @@ contract VaultCoreTest is Test {
 
         // Set strategies in vault
         vm.startPrank(owner);
-        vault.setAssetStrategy(USDC, address(usdcStrategy));
-        vault.setAssetStrategy(DAI, address(daiStrategy));
-        vault.setAssetStrategy(USDT, address(usdtStrategy));
-        vault.setAssetStrategy(USDE, address(usdeStrategy));
+        vault.setStrategy(USDC, address(usdcStrategy));
+        vault.setStrategy(DAI, address(daiStrategy));
+        vault.setStrategy(USDT, address(usdtStrategy));
+        vault.setStrategy(USDE, address(usdeStrategy));
         vm.stopPrank();
 
         // Verify strategies are set correctly
-        assertEq(vault.getAssetStrategy(USDC), address(usdcStrategy), "USDC strategy not set correctly");
-        assertEq(vault.getAssetStrategy(DAI), address(daiStrategy), "DAI strategy not set correctly");
-        assertEq(vault.getAssetStrategy(USDT), address(usdtStrategy), "USDT strategy not set correctly");
-        assertEq(vault.getAssetStrategy(USDE), address(usdeStrategy), "USDE strategy not set correctly");
+        assertEq(vault.assetToStrategy(USDC), address(usdcStrategy), "USDC strategy not set correctly");
+        assertEq(vault.assetToStrategy(DAI), address(daiStrategy), "DAI strategy not set correctly");
+        assertEq(vault.assetToStrategy(USDT), address(usdtStrategy), "USDT strategy not set correctly");
+        assertEq(vault.assetToStrategy(USDE), address(usdeStrategy), "USDE strategy not set correctly");
+
+        
+    }
+
+    function testAllocateToStrategies() public {
+        // First setup the strategies
+        testSetupStrategies();
+        
+        // Then mint a basket to get assets into the vault
+        uint256 mintAmount = 1000e18; // 1000 BentoUSD
+        uint256 minAmount = 990e18;   // 0.99% slippage
+
+        vm.startPrank(user);
+        vault.mintBasket(mintAmount, minAmount);
+        vm.stopPrank();
+
+        // Get vault balances before allocation
+        uint256 vaultUSDCBefore = IERC20(USDC).balanceOf(address(vault));
+        uint256 vaultDAIBefore = IERC20(DAI).balanceOf(address(vault));
+        uint256 vaultUSDTBefore = IERC20(USDT).balanceOf(address(vault));
+        uint256 vaultUSDeBefore = IERC20(USDE).balanceOf(address(vault));
+
+        console.log("Vault USDC balance before allocation:", vaultUSDCBefore / 1e6);
+        console.log("Vault DAI balance before allocation:", vaultDAIBefore / 1e18);
+        console.log("Vault USDT balance before allocation:", vaultUSDTBefore / 1e6);
+        console.log("Vault USDe balance before allocation:", vaultUSDeBefore / 1e18);
+
+        // Allocate assets to strategies
+        vm.startPrank(owner);
+        vault.allocate();
+        vm.stopPrank();
+
+        // Get vault balances after allocation
+        uint256 vaultUSDCAfter = IERC20(USDC).balanceOf(address(vault));
+        uint256 vaultDAIAfter = IERC20(DAI).balanceOf(address(vault));
+        uint256 vaultUSDTAfter = IERC20(USDT).balanceOf(address(vault));
+        uint256 vaultUSDeAfter = IERC20(USDE).balanceOf(address(vault));
+
+        // Get strategy share token balances
+        uint256 vaultUSDCShares = IERC20(sUSDC).balanceOf(address(vault));
+        uint256 vaultDAIShares = IERC20(sDAI).balanceOf(address(vault));
+        uint256 vaultUSDTShares = IERC20(sUSDT).balanceOf(address(vault));
+        uint256 vaultUSDeShares = IERC20(sUSDe).balanceOf(address(vault));
+
+        // Verify vault balances are now 0 (all allocated)
+        assertEq(vaultUSDCAfter, 0, "USDC not fully allocated");
+        assertEq(vaultDAIAfter, 0, "DAI not fully allocated");
+        assertEq(vaultUSDTAfter, 0, "USDT not fully allocated");
+        assertEq(vaultUSDeAfter, 0, "USDe not fully allocated");
+
+
+        console.log("Vault USDC shares:", vaultUSDCShares);
+        console.log("Vault DAI shares:", vaultDAIShares);
+        console.log("Vault USDT shares:", vaultUSDTShares);
+        console.log("Vault USDe shares:", vaultUSDeShares);
+
+        console.log(IERC4626(sUSDC).previewDeposit(10e6));
+
+        // Verify strategies received shares
+        assertGt(vaultUSDCShares, 0, "Vault didn't receive USDC shares");
+        assertGt(vaultDAIShares, 0, "Vault didn't receive DAI shares");
+        assertGt(vaultUSDTShares, 0, "Vault didn't receive USDT shares");
+        assertGt(vaultUSDeShares, 0, "Vault didn't receive USDe shares");
+
     }
 
     
