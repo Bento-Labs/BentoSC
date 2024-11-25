@@ -13,7 +13,6 @@ contract DeployVault is Script {
         bool deployNewOracleRouterFlag = false;
         bool deployNewVaultFlag = false;
         bool setBentoUSDVaultFlag = false;
-        bool setPriceFeedFlag = false;
         uint256 deployerPrivateKey = vm.envUint("BentoSepoliaDeployerPrivateKey");
         address owner = vm.addr(deployerPrivateKey);
         

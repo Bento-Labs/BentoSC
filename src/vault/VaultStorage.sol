@@ -50,4 +50,12 @@ contract VaultStorage {
         }
         return weights;
     }
+
+    function getAssets() public view returns (Asset[] memory) {
+        Asset[] memory _assets = new Asset[](allAssets.length);
+        for (uint256 i = 0; i < allAssets.length; i++) {
+            _assets[i] = assets[allAssets[i]];
+        }
+        return _assets;
+    }
 }
