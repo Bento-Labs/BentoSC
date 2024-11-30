@@ -11,6 +11,7 @@ import {IOracle} from "../interfaces/IOracle.sol";
 import {VaultAdmin} from "./VaultAdmin.sol";
 import {BentoUSD} from "../BentoUSD.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IERC4626} from "../interfaces/IERC4626.sol";
 
 contract VaultCore is Initializable, VaultAdmin {
     using SafeERC20 for IERC20;
@@ -199,7 +200,16 @@ contract VaultCore is Initializable, VaultAdmin {
         }
     }
 
-    function _redeemLtBasket(uint256 _amount) internal {
+    function redeemLTBasket(uint256 _amount) external {
+        uint256[] memory ltAmounts = getOutputLTAmounts(_amount);
+        BentoUSD(bentoUSD).burn(msg.sender, _amount);
+        for (uint256 i = 0; i < allAssets.length; i++) {
+            address assetAddress = allAssets[i];
+            IERC20(assetAddress).safeTransfer(msg.sender, ltAmounts[i]);
+        }
+    }
+
+    /* function _redeemLtBasket(uint256 _amount) internal {
         uint256 allAssetsLength = allAssets.length;
 
         for (uint256 i = 0; i < allAssetsLength; i++) {
@@ -215,7 +225,7 @@ contract VaultCore is Initializable, VaultAdmin {
             IERC20(ltToken).safeTransfer(msg.sender, amountToRedeem);
         }
         BentoUSD(bentoUSD).burn(msg.sender, _amount);
-    }
+    } */
 
     function _redeemUnderlyingBasket(uint256 _amount) internal {
         uint256 allAssetsLength = allAssets.length;
@@ -270,5 +280,32 @@ contract VaultCore is Initializable, VaultAdmin {
                 );
             }
         }
+    }
+
+    /* function getTotalAmountsOfLTs() public view returns (uint256[] memory) {
+        uint256[] memory amounts = new uint256[](allAssets.length);
+        for (uint256 i = 0; i < allAssets.length; i++) {
+            address asset = allAssets[i];
+            address ltToken = assets[asset].ltToken;
+            address assetBalance = IERC20(asset).balanceOf(address(this));
+            address ltTokenBalance = IERC20(asset).balanceOf(address(this));
+            amounts[i] = ltTokenBalance + IERC4626(ltToken).convertToShares(assetBalance);
+        }
+        return amounts; 
+    } */
+
+    function getOutputLTAmounts(uint256 inputAmount) public view returns (uint256[] memory) {
+        uint256[] memory amounts = new uint256[](allAssets.length);
+        for (uint256 i = 0; i < allAssets.length; i++) {
+            address asset = allAssets[i];
+            address ltToken = assets[asset].ltToken;
+            uint256 partialInputAmount = (inputAmount * assets[asset].weight) / totalWeight;
+            uint256 assetPrice = IOracle(oracleRouter).price(asset);
+            if (assetPrice < 1e18) {
+                assetPrice = 1e18;
+            }
+            amounts[i] = IERC4626(ltToken).convertToShares(partialInputAmount / assetPrice);
+        }
+        return amounts;
     }
 }

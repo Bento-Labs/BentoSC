@@ -2,9 +2,9 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title OToken VaultStorage contract
+ * @title BentoToken VaultStorage contract
  * @notice The VaultStorage contract defines the storage for the Vault contracts
- * @author Origin Protocol Inc
+ * @author Le Anh Dung, Bento Labs
  */
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -32,10 +32,10 @@ contract VaultStorage {
 
     /// @dev mapping of supported vault assets to their configuration
     // slither-disable-next-line uninitialized-state
-    mapping(address => Asset) internal assets;
+    mapping(address => Asset) public assets;
     /// @dev list of all assets supported by the vault.
     // slither-disable-next-line uninitialized-state
-    address[] internal allAssets;
+    address[] public allAssets;
 
     mapping(address => address) public ltTokenToAsset;
     /// @dev amount of asset we want to keep in the vault to cover for fast redemption

@@ -9,10 +9,10 @@ import "../src/UpgradableProxy.sol";
 
 contract DeployVault is Script {
     function run() external {
-        bool deployNewBentoUSDFlag = false;
-        bool deployNewOracleRouterFlag = false;
-        bool deployNewVaultFlag = false;
-        bool setBentoUSDVaultFlag = false;
+        bool deployNewBentoUSDFlag = true;
+        bool deployNewOracleRouterFlag = true;
+        bool deployNewVaultFlag = true;
+        bool setBentoUSDVaultFlag = true;
         uint256 deployerPrivateKey = vm.envUint("BentoSepoliaDeployerPrivateKey");
         address owner = vm.addr(deployerPrivateKey);
         

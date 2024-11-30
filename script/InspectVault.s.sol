@@ -36,6 +36,7 @@ contract InspectVault is Script {
             address asset = vault.allAssets(i);
             VaultStorage.Asset memory assetInfo = vaultAssets[i];
             IERC20Metadata token = IERC20Metadata(asset);
+            address ltToken = assetInfo.ltToken;
             
             console.log("\nAsset", i + 1);
             console.log("Name:", token.name());
@@ -44,13 +45,15 @@ contract InspectVault is Script {
             console.log("Decimals:", assetInfo.decimals);
             console.log("Weight:", assetInfo.weight, "%");
             console.log("Strategy:", vault.assetToStrategy(asset));
+            console.log("ltToken:", ltToken);
+            console.log("ltToken decimals:", IERC20Metadata(ltToken).decimals());
             
             // Get asset balance in vault
             uint256 balance = token.balanceOf(vaultAddress);
             console.log("Balance in vault:", balance);
             
             // Get price from oracle
-            try oracle.getPrice(asset) returns (uint256 price) {
+            try oracle.price(asset) returns (uint256 price) {
                 console.log("Price (USD):", price);
             } catch {
                 console.log("Price: Error getting price");

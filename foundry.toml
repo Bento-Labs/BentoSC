@@ -23,12 +23,17 @@ evm_version = "paris"
 solc_version = "0.8.27"
 
 
+
 # Additional settings
 fuzz_runs = 1000
 gas_reports = ["*"]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 
+[rpc_endpoints]
+mainnet = "${MainnetAlchemyAPI}"
+tenderlyMainnet = "${TenderlyMainnetRPC}"
+sepolia = "${SepoliaRPC}"
 [etherscan]
 mainnet = { key = "${EtherscanApiKey}" }
 sepolia = { key = "${EtherscanApiKey}" }

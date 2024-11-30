@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import '@openzeppelin/contracts/utils/Address.sol';
+import "forge-std/console.sol";
 
 contract UpgradableProxy {
   bytes32 private constant proxyOwnerPosition = keccak256('proxy.owner');
@@ -111,6 +112,7 @@ contract UpgradableProxy {
   }
 
   function setNewImplementation(address _newImplementation) public {
+    printChainState();
     require(
       msg.sender == proxyOwner(),
       'UpgradeabilityProxy: only current proxy owner can set new implementation.'
@@ -124,13 +126,16 @@ contract UpgradableProxy {
   }
 
   function transferImplementation() public {
+    printChainState();
     require(
       msg.sender == proxyOwner(),
       'UpgradeabilityProxy: only proxy owner can transfer implementation.'
     );
+    console.log("timelock:", timelock());
+    console.log("block.timestamp:", block.timestamp);
     require(
       block.timestamp >= timelock(),
-      'UpgradeabilityProxy: cannot transfer implementation yet.'
+      string(abi.encodePacked('UpgradeabilityProxy: cannot transfer implementation yet. Current time: ', block.timestamp, ', Required time: ', timelock()))
     );
     _setImplementation(newImplementation());
   }
@@ -168,5 +173,11 @@ contract UpgradableProxy {
 
   receive() external payable {
     _delegate(implementation());
+  }
+
+  function printChainState() public view {
+    console.log("block.timestamp:", block.timestamp);
+    console.log("block.number:", block.number);
+    console.log("timelock:", timelock());
   }
 }

@@ -7,6 +7,7 @@ library Addresses {
     address public constant sDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address public constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
+    address public constant USDe = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
     address public constant sDAI_USD_FEED = 0x73366a099E198b828E6023232990e16406673607;
     address public constant DAI_USD_FEED = 0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9;
     address public constant USDC_USD_FEED = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
