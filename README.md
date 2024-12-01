@@ -1,4 +1,4 @@
-## Ethena x Encode Hackathon README
+## Ethena x Encode Hackathon
 
 Bento Labs submission for the Encode x Ethena Hackathon consists of the following documents and code repositories:
 
