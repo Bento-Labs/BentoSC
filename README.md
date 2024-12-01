@@ -1,3 +1,11 @@
+Bento Labs submission for the Encode x Ethena Hackathon consists of the following documents and code repositories:
+
+https://github.com/Bento-Labs/BentoSC containing our smart contracts
+
+https://github.com/Bento-Labs/bento-app-fe containing the demo app front-end
+
+https://drive.google.com/file/d/1t_yR969VfFHqzkGfwEiQUIBtuczNSGJa/view?usp=sharing provides a complete overview of the Bento Protocol.
+
 ## Foundry
 
 **Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
