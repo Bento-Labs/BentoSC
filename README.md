@@ -1,3 +1,5 @@
+Ethena x Encode Hackathon README
+
 Bento Labs submission for the Encode x Ethena Hackathon consists of the following documents and code repositories:
 
 https://github.com/Bento-Labs/BentoSC containing our smart contracts
