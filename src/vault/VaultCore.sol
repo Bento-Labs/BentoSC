@@ -11,8 +11,13 @@ import {IOracle} from "../interfaces/IOracle.sol";
 import {VaultAdmin} from "./VaultAdmin.sol";
 import {BentoUSD} from "../BentoUSD.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
-import {IERC4626} from "../interfaces/IERC4626.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
+/**
+ * @title VaultCore
+ * @notice Core vault implementation for BentoUSD stablecoin system
+ * @dev Handles minting, redeeming, and asset allocation operations
+ */
 contract VaultCore is Initializable, VaultAdmin {
     using SafeERC20 for IERC20;
     using StableMath for uint256;
@@ -45,6 +50,14 @@ contract VaultCore is Initializable, VaultAdmin {
         governor = _governor;
     }
 
+    /**
+     * @notice Mints BentoUSD tokens in exchange for a single supported asset
+     * @param _asset Address of the input asset
+     * @param _amount Amount of input asset to deposit
+     * @param _minimumBentoUSDAmount Minimum acceptable BentoUSD output
+     * @param _routers Array of DEX router addresses for swaps
+     * @param _routerData Encoded swap data for each router
+     */
     function mint(
         address _asset,
         uint256 _amount,
@@ -55,6 +68,11 @@ contract VaultCore is Initializable, VaultAdmin {
         _mint(_asset, _amount, _minimumBentoUSDAmount, _routers, _routerData);
     }
 
+    /**
+     * @notice Mints BentoUSD by depositing a proportional basket of all supported assets
+     * @param _amount Total USD value to deposit
+     * @param _minimumBentoUSDAmount Minimum acceptable BentoUSD output
+     */
     function mintBasket(
         uint256 _amount,
         uint256 _minimumBentoUSDAmount
@@ -78,6 +96,10 @@ contract VaultCore is Initializable, VaultAdmin {
         BentoUSD(bentoUSD).mint(msg.sender, totalAmount);
     }
 
+    /**
+     * @notice Redeems BentoUSD for liquid staking tokens of supported assets
+     * @param _amount Amount of BentoUSD to redeem
+     */
     function redeemLTBasket(uint256 _amount) external {
         uint256[] memory ltAmounts = getOutputLTAmounts(_amount);
         BentoUSD(bentoUSD).burn(msg.sender, _amount);
@@ -87,12 +109,21 @@ contract VaultCore is Initializable, VaultAdmin {
         }
     }
 
+    /**
+     * @notice Allocates excess assets in the vault to yield-generating strategies
+     * @dev Can only be called by the governor
+     */
     function allocate() external onlyGovernor {
         _allocate();
     }
 
     // === Public View Functions ===
 
+    /**
+     * @notice Calculates the required amounts of each asset for a proportional deposit
+     * @param desiredAmount Total USD value to be deposited
+     * @return Array of asset amounts and total USD value
+     */
     function getDepositAssetAmounts(uint256 desiredAmount) public view returns (uint256[] memory, uint256) {
         uint256 numberOfAssets = allAssets.length;
         uint256[] memory relativeWeights = new uint256[](numberOfAssets);

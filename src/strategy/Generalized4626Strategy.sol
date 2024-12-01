@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 /**
  * @title Generalized 4626 Strategy
  * @notice Investment strategy for ERC-4626 Tokenized Vaults
- * @author Origin Protocol Inc
  */
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";

@@ -34,7 +34,6 @@ contract TransferTokens is Script {
                 require(initialBalance >= amount, "Insufficient balance");
                 
                 IERC20(token).safeTransfer(recipient, amount);
-                vm.txWait(); // Wait for the transfer transaction to be mined
   
                 uint256 finalBalance = IERC20(token).balanceOf(sender);
                 uint256 recipientBalance = IERC20(token).balanceOf(recipient);
