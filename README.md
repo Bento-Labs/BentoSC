@@ -6,7 +6,7 @@ https://github.com/Bento-Labs/BentoSC containing our smart contracts
 
 https://github.com/Bento-Labs/bento-app-fe containing the demo app front-end
 
-[Bento Protocol Overview](https://drive.google.com/file/d/1t_yR969VfFHqzkGfwEiQUIBtuczNSGJa/view?usp=sharing) provides a complete overview of the Bento Protocol.
+https://drive.google.com/file/d/1t_yR969VfFHqzkGfwEiQUIBtuczNSGJa/view?usp=sharing provides a complete overview of the Bento Protocol.
 
 ## Foundry
 
