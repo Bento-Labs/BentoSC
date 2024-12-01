@@ -3,7 +3,9 @@
 Bento Labs submission for the Encode x Ethena Hackathon consists of the following documents and code repositories:
 
 https://github.com/Bento-Labs/BentoSC containing our smart contracts
+
 https://github.com/Bento-Labs/bento-app-fe containing the demo app front-end
+
 https://docs.google.com/document/d/1pBAmBt9mjbfjladn0NGyAZCeuWFxXdeeiYJXBS7D-Dw/edit?usp=sharing providing a complete overview of the Bento Protocol.
 
 ## Foundry
