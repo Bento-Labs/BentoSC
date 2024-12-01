@@ -156,7 +156,24 @@ contract VaultCore is Initializable, VaultAdmin {
         uint256 _amount,
         uint256 _minimumBentoUSDAmount
     ) external {
-        uint256 totalValueOfBasket = 0;
+        (uint256[] memory amounts, uint256 totalAmount) = getDepositAssetAmounts(_amount);
+        for (uint256 i = 0; i < allAssets.length; i++) {
+            address assetAddress = allAssets[i];
+            IERC20(assetAddress).safeTransferFrom(msg.sender, address(this), amounts[i]);
+        }
+        require(
+            totalAmount > _minimumBentoUSDAmount,
+            string(
+                abi.encodePacked(
+            "VaultCore: price deviation too high. Total value: ",
+            Strings.toString(totalAmount),
+            ", Minimum required: ",
+                    Strings.toString(_minimumBentoUSDAmount)
+                )
+            )
+        );
+        BentoUSD(bentoUSD).mint(msg.sender, totalAmount);
+        /* uint256 totalValueOfBasket = 0;
         for (uint256 i = 0; i < allAssets.length; i++) {
             address assetAddress = allAssets[i];
             uint8 assetDecimals = assets[assetAddress].decimals;
@@ -189,7 +206,7 @@ contract VaultCore is Initializable, VaultAdmin {
         )
     )
         );
-        BentoUSD(bentoUSD).mint(msg.sender, totalValueOfBasket);
+        BentoUSD(bentoUSD).mint(msg.sender, totalValueOfBasket); */
     }
 
     function _swap(address _router, bytes calldata _routerData) internal {
@@ -293,6 +310,39 @@ contract VaultCore is Initializable, VaultAdmin {
         }
         return amounts; 
     } */
+
+    function getDepositAssetAmounts(uint256 desiredAmount) public view returns (uint256[] memory, uint256) {
+        uint256 numberOfAssets = allAssets.length;
+        uint256[] memory relativeWeights = new uint256[](numberOfAssets);
+        uint256[] memory amounts = new uint256[](numberOfAssets);
+        uint256 totalRelativeWeight = 0;
+        for (uint256 i = 0; i < numberOfAssets; i++) {
+            address assetAddress = allAssets[i];
+
+            uint256 assetPrice = IOracle(oracleRouter).price(assetAddress);
+            if (assetPrice > 1e18) {
+                assetPrice = 1e18;
+            }
+            relativeWeights[i] = assets[assetAddress].weight * assetPrice;
+            totalRelativeWeight += relativeWeights[i];
+        }
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < numberOfAssets; i++) {
+            // we round it upwards to avoid rounding errors detrimental for the protocol
+            amounts[i] = (desiredAmount * relativeWeights[i]) / (totalRelativeWeight * 1e18);
+            totalAmount += amounts[i];
+        }
+        return (amounts, totalAmount);
+    }
+
+    function normalizeDecimals(uint8 assetDecimals, uint256 amount) internal pure returns (uint256) {
+        if (assetDecimals < 18) {
+            return amount / 10 ** (18 - assetDecimals);
+        } else if (assetDecimals > 18) {
+            return amount * 10 ** (assetDecimals - 18);
+        }
+        return amount;
+    }
 
     function getOutputLTAmounts(uint256 inputAmount) public view returns (uint256[] memory) {
         uint256[] memory amounts = new uint256[](allAssets.length);

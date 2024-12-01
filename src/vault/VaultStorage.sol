@@ -16,8 +16,6 @@ contract VaultStorage {
 
     // Changed to fit into a single storage slot so the decimals needs to be recached
     struct Asset {
-        // Note: OETHVaultCore doesn't use `isSupported` when minting,
-        // redeeming or checking balance of assets.
         bool isSupported;
         uint8 decimals;
         uint8 weight;

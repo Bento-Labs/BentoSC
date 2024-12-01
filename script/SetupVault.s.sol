@@ -140,7 +140,7 @@ contract SetupVault is Script {
         if (setLTToken) {
             VaultStorage.Asset[] memory vaultAssets = vault.getAssets();
             console.log("\n=== Supported Assets ===");
-            uint8[4] memory weights = [50, 75, 25, 50];
+            uint8[4] memory weights = [75, 50, 25, 50];
             for (uint i = 0; i < vaultAssets.length; i++) {
                 address asset = vault.allAssets(i);
                 VaultStorage.Asset memory assetInfo = vaultAssets[i];
