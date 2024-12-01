@@ -38,23 +38,13 @@ contract VaultCore is Initializable, VaultAdmin {
         _disableInitializers();
     }
 
-    /**
-     * @notice Initialize the VaultCore contract
-     * @param _governor Address of the governor
-     */
-    function initialize(
-        address _governor
-    ) public initializer {
+    // === External Functions ===
+    
+    function initialize(address _governor) public initializer {
         require(_governor != address(0), "Governor cannot be zero address");
         governor = _governor;
     }
 
-    /**
-     * @notice Deposit a supported asset and mint BentoUSD.
-     * @param _asset Address of the asset being deposited
-     * @param _amount Amount of the asset being deposited
-     * @param _minimumBentoUSDAmount Minimum BentoUSD to mint
-     */
     function mint(
         address _asset,
         uint256 _amount,
@@ -64,6 +54,85 @@ contract VaultCore is Initializable, VaultAdmin {
     ) external {
         _mint(_asset, _amount, _minimumBentoUSDAmount, _routers, _routerData);
     }
+
+    function mintBasket(
+        uint256 _amount,
+        uint256 _minimumBentoUSDAmount
+    ) external {
+        (uint256[] memory amounts, uint256 totalAmount) = getDepositAssetAmounts(_amount);
+        for (uint256 i = 0; i < allAssets.length; i++) {
+            address assetAddress = allAssets[i];
+            IERC20(assetAddress).safeTransferFrom(msg.sender, address(this), amounts[i]);
+        }
+        require(
+            totalAmount > _minimumBentoUSDAmount,
+            string(
+                abi.encodePacked(
+            "VaultCore: price deviation too high. Total value: ",
+            Strings.toString(totalAmount),
+            ", Minimum required: ",
+                    Strings.toString(_minimumBentoUSDAmount)
+                )
+            )
+        );
+        BentoUSD(bentoUSD).mint(msg.sender, totalAmount);
+    }
+
+    function redeemLTBasket(uint256 _amount) external {
+        uint256[] memory ltAmounts = getOutputLTAmounts(_amount);
+        BentoUSD(bentoUSD).burn(msg.sender, _amount);
+        for (uint256 i = 0; i < allAssets.length; i++) {
+            address assetAddress = allAssets[i];
+            IERC20(assetAddress).safeTransfer(msg.sender, ltAmounts[i]);
+        }
+    }
+
+    function allocate() external onlyGovernor {
+        _allocate();
+    }
+
+    // === Public View Functions ===
+
+    function getDepositAssetAmounts(uint256 desiredAmount) public view returns (uint256[] memory, uint256) {
+        uint256 numberOfAssets = allAssets.length;
+        uint256[] memory relativeWeights = new uint256[](numberOfAssets);
+        uint256[] memory amounts = new uint256[](numberOfAssets);
+        uint256 totalRelativeWeight = 0;
+        for (uint256 i = 0; i < numberOfAssets; i++) {
+            address assetAddress = allAssets[i];
+
+            uint256 assetPrice = IOracle(oracleRouter).price(assetAddress);
+            if (assetPrice > 1e18) {
+                assetPrice = 1e18;
+            }
+            relativeWeights[i] = assets[assetAddress].weight * assetPrice;
+            totalRelativeWeight += relativeWeights[i];
+        }
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < numberOfAssets; i++) {
+            // we round it upwards to avoid rounding errors detrimental for the protocol
+            amounts[i] = (desiredAmount * relativeWeights[i]) / (totalRelativeWeight * 1e18);
+            totalAmount += amounts[i];
+        }
+        return (amounts, totalAmount);
+    }
+
+    function getOutputLTAmounts(uint256 inputAmount) public view returns (uint256[] memory) {
+        uint256[] memory amounts = new uint256[](allAssets.length);
+        for (uint256 i = 0; i < allAssets.length; i++) {
+            address asset = allAssets[i];
+            address ltToken = assets[asset].ltToken;
+            uint256 partialInputAmount = (inputAmount * assets[asset].weight) / totalWeight;
+            uint256 assetPrice = IOracle(oracleRouter).price(asset);
+            if (assetPrice < 1e18) {
+                assetPrice = 1e18;
+            }
+            amounts[i] = IERC4626(ltToken).convertToShares(partialInputAmount / assetPrice);
+        }
+        return amounts;
+    }
+
+    // === Internal Functions ===
 
     function _mint(
         address _asset,
@@ -146,69 +215,6 @@ contract VaultCore is Initializable, VaultAdmin {
         BentoUSD(bentoUSD).mint(msg.sender, totalValueOfBasket);
     }
 
-    /**
-     * @notice Mint BentoUSD by depositing a proportional basket of all supported assets
-     * @dev This function mints BentoUSD by accepting deposits of all supported assets in their target weights
-     * @param _amount The total amount of BentoUSD to mint
-     * @param _minimumBentoUSDAmount The minimum amount of BentoUSD to receive (slippage protection)
-     */
-    function mintBasket(
-        uint256 _amount,
-        uint256 _minimumBentoUSDAmount
-    ) external {
-        (uint256[] memory amounts, uint256 totalAmount) = getDepositAssetAmounts(_amount);
-        for (uint256 i = 0; i < allAssets.length; i++) {
-            address assetAddress = allAssets[i];
-            IERC20(assetAddress).safeTransferFrom(msg.sender, address(this), amounts[i]);
-        }
-        require(
-            totalAmount > _minimumBentoUSDAmount,
-            string(
-                abi.encodePacked(
-            "VaultCore: price deviation too high. Total value: ",
-            Strings.toString(totalAmount),
-            ", Minimum required: ",
-                    Strings.toString(_minimumBentoUSDAmount)
-                )
-            )
-        );
-        BentoUSD(bentoUSD).mint(msg.sender, totalAmount);
-        /* uint256 totalValueOfBasket = 0;
-        for (uint256 i = 0; i < allAssets.length; i++) {
-            address assetAddress = allAssets[i];
-            uint8 assetDecimals = assets[assetAddress].decimals;
-            // amounttoDeposit is assumed to have 18 decimals
-            uint256 amountToDeposit = (_amount * assets[assetAddress].weight) /
-                totalWeight;
-            uint256 amountToDepositWithDecimals = amountToDeposit;
-            // we need to shift the decimals places
-            if (assetDecimals < 18) {
-                amountToDepositWithDecimals = amountToDeposit / 10 ** (18 - assetDecimals);
-            } else if (assetDecimals > 18) {
-                amountToDepositWithDecimals = amountToDeposit * 10 ** (assetDecimals - 18);
-            }
-            IERC20(assetAddress).safeTransferFrom(msg.sender, address(this), amountToDepositWithDecimals);
-
-            uint256 assetPrice = IOracle(oracleRouter).price(assetAddress);
-            if (assetPrice > 1e18) {
-                assetPrice = 1e18;
-            }
-            totalValueOfBasket += (amountToDeposit * assetPrice) / 1e18;
-        }
-        require(
-            totalValueOfBasket > _minimumBentoUSDAmount,
-            string(
-        abi.encodePacked(
-            "VaultCore: price deviation too high. Total value: ",
-            Strings.toString(totalValueOfBasket),
-            ", Minimum required: ",
-            Strings.toString(_minimumBentoUSDAmount)
-        )
-    )
-        );
-        BentoUSD(bentoUSD).mint(msg.sender, totalValueOfBasket); */
-    }
-
     function _swap(address _router, bytes calldata _routerData) internal {
         (bool success, bytes memory _data) = _router.call(_routerData);
         if (!success) {
@@ -216,33 +222,6 @@ contract VaultCore is Initializable, VaultAdmin {
             else revert SwapFailed("Unknown reason");
         }
     }
-
-    function redeemLTBasket(uint256 _amount) external {
-        uint256[] memory ltAmounts = getOutputLTAmounts(_amount);
-        BentoUSD(bentoUSD).burn(msg.sender, _amount);
-        for (uint256 i = 0; i < allAssets.length; i++) {
-            address assetAddress = allAssets[i];
-            IERC20(assetAddress).safeTransfer(msg.sender, ltAmounts[i]);
-        }
-    }
-
-    /* function _redeemLtBasket(uint256 _amount) internal {
-        uint256 allAssetsLength = allAssets.length;
-
-        for (uint256 i = 0; i < allAssetsLength; i++) {
-            address assetAddress = allAssets[i];
-            address ltToken = assets[assetAddress].ltToken;
-            uint256 ltTokenPrice = IOracle(oracleRouter).price(ltToken);
-            if (ltTokenPrice < 1e18) {
-                ltTokenPrice = 1e18;
-            }
-            uint256 amountToRedeem = (_amount *
-                assets[assetAddress].weight *
-                ltTokenPrice) / (totalWeight * 1e18);
-            IERC20(ltToken).safeTransfer(msg.sender, amountToRedeem);
-        }
-        BentoUSD(bentoUSD).burn(msg.sender, _amount);
-    } */
 
     function _redeemUnderlyingBasket(uint256 _amount) internal {
         uint256 allAssetsLength = allAssets.length;
@@ -264,13 +243,6 @@ contract VaultCore is Initializable, VaultAdmin {
         revert("VaultCore: redeemWithWaitingPeriod is not implemented");
     }
 
-    function allocate() external onlyGovernor {
-        _allocate();
-    }
-
-    /**
-     * @dev Allocate unallocated funds on Vault to strategies.
-     **/
     function _allocate() internal virtual {
         uint256 allAssetsLength = allAssets.length;
         for (uint256 i = 0; i < allAssetsLength; ++i) {
@@ -299,41 +271,7 @@ contract VaultCore is Initializable, VaultAdmin {
         }
     }
 
-    /* function getTotalAmountsOfLTs() public view returns (uint256[] memory) {
-        uint256[] memory amounts = new uint256[](allAssets.length);
-        for (uint256 i = 0; i < allAssets.length; i++) {
-            address asset = allAssets[i];
-            address ltToken = assets[asset].ltToken;
-            address assetBalance = IERC20(asset).balanceOf(address(this));
-            address ltTokenBalance = IERC20(asset).balanceOf(address(this));
-            amounts[i] = ltTokenBalance + IERC4626(ltToken).convertToShares(assetBalance);
-        }
-        return amounts; 
-    } */
-
-    function getDepositAssetAmounts(uint256 desiredAmount) public view returns (uint256[] memory, uint256) {
-        uint256 numberOfAssets = allAssets.length;
-        uint256[] memory relativeWeights = new uint256[](numberOfAssets);
-        uint256[] memory amounts = new uint256[](numberOfAssets);
-        uint256 totalRelativeWeight = 0;
-        for (uint256 i = 0; i < numberOfAssets; i++) {
-            address assetAddress = allAssets[i];
-
-            uint256 assetPrice = IOracle(oracleRouter).price(assetAddress);
-            if (assetPrice > 1e18) {
-                assetPrice = 1e18;
-            }
-            relativeWeights[i] = assets[assetAddress].weight * assetPrice;
-            totalRelativeWeight += relativeWeights[i];
-        }
-        uint256 totalAmount = 0;
-        for (uint256 i = 0; i < numberOfAssets; i++) {
-            // we round it upwards to avoid rounding errors detrimental for the protocol
-            amounts[i] = (desiredAmount * relativeWeights[i]) / (totalRelativeWeight * 1e18);
-            totalAmount += amounts[i];
-        }
-        return (amounts, totalAmount);
-    }
+    // === Internal Pure Functions ===
 
     function normalizeDecimals(uint8 assetDecimals, uint256 amount) internal pure returns (uint256) {
         if (assetDecimals < 18) {
@@ -342,20 +280,5 @@ contract VaultCore is Initializable, VaultAdmin {
             return amount * 10 ** (assetDecimals - 18);
         }
         return amount;
-    }
-
-    function getOutputLTAmounts(uint256 inputAmount) public view returns (uint256[] memory) {
-        uint256[] memory amounts = new uint256[](allAssets.length);
-        for (uint256 i = 0; i < allAssets.length; i++) {
-            address asset = allAssets[i];
-            address ltToken = assets[asset].ltToken;
-            uint256 partialInputAmount = (inputAmount * assets[asset].weight) / totalWeight;
-            uint256 assetPrice = IOracle(oracleRouter).price(asset);
-            if (assetPrice < 1e18) {
-                assetPrice = 1e18;
-            }
-            amounts[i] = IERC4626(ltToken).convertToShares(partialInputAmount / assetPrice);
-        }
-        return amounts;
     }
 }

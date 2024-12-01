@@ -1,59 +1,53 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-/**
- * @title BentoToken VaultStorage contract
- * @notice The VaultStorage contract defines the storage for the Vault contracts
- * @author Le Anh Dung, Bento Labs
- */
+pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {IBentoBoxV1} from "../interfaces/IBentoBoxV1.sol";
 
 contract VaultStorage {
-    using SafeERC20 for IERC20;
+    // === Constants ===
+    uint256 public constant WAITING_PERIOD = 3 days;
 
-    // Changed to fit into a single storage slot so the decimals needs to be recached
-    struct Asset {
-        bool isSupported;
-        uint8 decimals;
-        uint8 weight;
-        address ltToken;
-    }
-
-    uint256 public totalWeight;
-
+    // === State Variables ===
+    
+    // Addresses & Core Components
     address public governor;
-    address public bentoUSD;
-    address public oracleRouter;
+    IBentoBoxV1 public immutable bentoBox;
+    IERC20 public immutable bentoUSD;
+    IERC20[] public assets;
 
-    /// @dev mapping of supported vault assets to their configuration
-    // slither-disable-next-line uninitialized-state
-    mapping(address => Asset) public assets;
-    /// @dev list of all assets supported by the vault.
-    // slither-disable-next-line uninitialized-state
-    address[] public allAssets;
+    // Configuration
+    uint256[] public relativeWeights;
+    uint256 public totalRelativeWeight;
+    uint256 public lastAllocation;
+    
+    // Redemption Related
+    mapping(address => uint256) public redemptionQueue;
+    mapping(address => uint256) public redemptionQueueStart;
 
-    mapping(address => address) public ltTokenToAsset;
-    /// @dev amount of asset we want to keep in the vault to cover for fast redemption
-    mapping(address => uint256) public minimalAmountInVault;
+    // === Events ===
+    event Mint(address indexed sender, uint256 amount);
+    event Redeem(address indexed sender, uint256 amount);
+    event AllocationUpdated();
+    event RedemptionRequested(address indexed sender, uint256 amount);
+    event RedemptionProcessed(address indexed sender, uint256 amount);
 
-    mapping(address => address) public assetToStrategy;
-
-    function getWeights() public view returns (uint8[] memory) {
-        uint8[] memory weights = new uint8[](allAssets.length);
-        for (uint256 i = 0; i < allAssets.length; i++) {
-            weights[i] = assets[allAssets[i]].weight;
-        }
-        return weights;
+    // === External View Functions ===
+    
+    function getAssets() external view returns (IERC20[] memory) {
+        return assets;
     }
 
-    function getAssets() public view returns (Asset[] memory) {
-        Asset[] memory _assets = new Asset[](allAssets.length);
-        for (uint256 i = 0; i < allAssets.length; i++) {
-            _assets[i] = assets[allAssets[i]];
-        }
-        return _assets;
+    function getRelativeWeights() external view returns (uint256[] memory) {
+        return relativeWeights;
+    }
+
+    // === Constructor ===
+    
+    constructor(address _bentoBox, address _bentoUSD) {
+        require(_bentoBox != address(0), "BentoBox cannot be zero address");
+        require(_bentoUSD != address(0), "BentoUSD cannot be zero address");
+        bentoBox = IBentoBoxV1(_bentoBox);
+        bentoUSD = IERC20(_bentoUSD);
     }
 }
