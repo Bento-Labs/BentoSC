@@ -10,7 +10,7 @@ import "../src/UpgradableProxy.sol";
 contract DeployVault is Script {
     function run() external {
         bool deployNewBentoUSDFlag = true;
-        bool deployNewOracleRouterFlag = true;
+        bool deployNewOracleRouterFlag = false;
         bool deployNewVaultFlag = true;
         bool setBentoUSDVaultFlag = true;
         uint256 deployerPrivateKey = vm.envUint("BentoSepoliaDeployerPrivateKey");
@@ -56,9 +56,7 @@ contract DeployVault is Script {
             // Deploy VaultCore proxy
             bytes memory vaultData = abi.encodeWithSelector(
                 VaultCore.initialize.selector,
-                owner,                    // owner
-                address(bentoUSD),      // bentoUSD
-                address(oracle)           // oracle router
+                owner     // owner, governor
             );
             vaultProxy = new UpgradableProxy(
                 owner,

@@ -12,7 +12,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 contract InspectVault is Script {
     function run() external view {
         // Load deployed vault address
-        address vaultAddress = 0x8FDE145B1289a99C6B15f363309d3cc9276c0b16;
+        address vaultAddress = 0x1Db5962360f7Ee0e42beB8cA4aF624f98863CD34;
         VaultCore vault = VaultCore(vaultAddress);
         
         // Get BentoUSD and OracleRouter addresses from vault

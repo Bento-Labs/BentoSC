@@ -23,15 +23,17 @@ contract SetupVault is Script {
         address owner = vm.addr(deployerPrivateKey);
         
         // Contract addresses - replace with your deployed addresses
-        address vaultAddress = 0x8FDE145B1289a99C6B15f363309d3cc9276c0b16; // From your deployment
+        address vaultAddress = 0x1Db5962360f7Ee0e42beB8cA4aF624f98863CD34; // From your deployment
+        address bentoUSDAddress = 0x5cE9E37DE64F5D1a1721712519F10BFC16AAC864;
+        address oracleRouterAddress = 0x8f86bFc69a9A8bfEceB81f02B8A34327a785b58b;
         VaultCore vault = VaultCore(vaultAddress);
         console.log("Vault address:", vaultAddress);
 
         vm.startBroadcast(deployerPrivateKey);
         if (setBentoUSD) {
-            vault.setBentoUSD(0x6ae08082387AaBcA74830054B1f3ba8a0571F9c6);
+            vault.setBentoUSD(bentoUSDAddress);
         }
-        address oracleRouterAddress;
+
         if (setOracleRouter) {
             vault.setOracleRouter(oracleRouterAddress);
         } else {
@@ -84,30 +86,30 @@ contract SetupVault is Script {
             // Set assets with equal weights (25% each)
             vault.setAsset(
             Addresses.SEPOLIA_USDC,
-            6,      // USDC decimals
-            25,     // 25% weight
+            18,      // USDC decimals
+            375,     // 25% weight
             address(0)  // No LT token initially
         );
 
         vault.setAsset(
             Addresses.SEPOLIA_DAI,
             18,     // DAI decimals
-            25,     // 25% weight
+            250,     // 25% weight
             address(0)
         );
 
         vault.setAsset(
             Addresses.SEPOLIA_USDT,
-            6,      // USDT decimals
-            25,     // 25% weight
+            18,      // USDT decimals
+            125,     // 25% weight
             address(0)
         );
 
         vault.setAsset(
             Addresses.SEPOLIA_USDe,
             18,     // USDe decimals
-            25,     // 25% weight
-                address(0)
+            250,     // 25% weight
+            address(0)
             );
         }
         address USDC_Vault = address(0);
@@ -150,7 +152,7 @@ contract SetupVault is Script {
                 address assetStrategy = vault.assetToStrategy(asset);
                 address ltToken = Generalized4626Strategy(assetStrategy).shareToken();
                 console.log("LT token:", ltToken);
-                vault.changeAsset(asset, 18, weights[i], ltToken);
+                vault.changeAsset(asset, 18, assetInfo.weight, ltToken);
                 
             }
         }

@@ -18,16 +18,16 @@ contract VaultAdmin is VaultStorage {
     using SafeERC20 for IERC20;
     using StableMath for uint256;
 
-    event AssetAdded(address indexed asset, uint8 decimals, uint8 weight);
+    event AssetAdded(address indexed asset, uint8 decimals, uint32 weight);
     event AssetRemoved(address indexed asset);
-    event AssetChanged(address indexed asset, uint8 decimals, uint8 weight);
+    event AssetChanged(address indexed asset, uint8 decimals, uint32 weight);
     event OracleRouterUpdated(address indexed oracleRouter);
     event BentoUSDUpdated(address indexed bentoUSD);
     event GovernorUpdated(address indexed governor);
     event AssetWeightChanged(
         address indexed asset,
-        uint8 oldWeight,
-        uint8 newWeight
+        uint32 oldWeight,
+        uint32 newWeight
     );
 
     /***************************************
@@ -60,7 +60,7 @@ contract VaultAdmin is VaultStorage {
     function setAsset(
         address _asset,
         uint8 _decimals,
-        uint8 _weight,
+        uint32 _weight,
         address _ltToken
     ) external onlyGovernor {
         require(!assets[_asset].isSupported, "Asset is already supported");
@@ -97,7 +97,7 @@ contract VaultAdmin is VaultStorage {
     function changeAsset(
         address _asset,
         uint8 _decimals,
-        uint8 _weight,
+        uint32 _weight,
         address _ltToken
     ) external onlyGovernor {
         require(assets[_asset].isSupported, "Asset is not supported");
@@ -114,8 +114,8 @@ contract VaultAdmin is VaultStorage {
      */
     function _changeAssetWeight(
         address _asset,
-        uint8 _oldWeight,
-        uint8 _newWeight
+        uint32 _oldWeight,
+        uint32 _newWeight
     ) internal {
         totalWeight = totalWeight + _newWeight - _oldWeight;
         assets[_asset].weight = _newWeight;

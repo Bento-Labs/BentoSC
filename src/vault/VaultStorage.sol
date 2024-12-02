@@ -18,7 +18,7 @@ contract VaultStorage {
     struct Asset {
         bool isSupported;
         uint8 decimals;
-        uint8 weight;
+        uint32 weight;
         address ltToken;
     }
 
@@ -41,8 +41,8 @@ contract VaultStorage {
 
     mapping(address => address) public assetToStrategy;
 
-    function getWeights() public view returns (uint8[] memory) {
-        uint8[] memory weights = new uint8[](allAssets.length);
+    function getWeights() public view returns (uint32[] memory) {
+        uint32[] memory weights = new uint32[](allAssets.length);
         for (uint256 i = 0; i < allAssets.length; i++) {
             weights[i] = assets[allAssets[i]].weight;
         }
