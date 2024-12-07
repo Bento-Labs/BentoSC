@@ -13,24 +13,89 @@ contract SetupVault is Script {
     function run() external {
         bool setBentoUSD = false;
         bool setOracleRouter = false;
-        bool setAssets = false;
-        bool setAssetPriceFeeds = false;
-        bool deployStrategies = false;
-        bool setAssetStrategies = false;
-        bool setLTToken = true;
-        // Load private key and addresses
-        uint256 deployerPrivateKey = vm.envUint("BentoSepoliaDeployerPrivateKey");
-        address owner = vm.addr(deployerPrivateKey);
-        
-        // Contract addresses - replace with your deployed addresses
-        address vaultAddress = 0x1Db5962360f7Ee0e42beB8cA4aF624f98863CD34; // From your deployment
-        address bentoUSDAddress = 0x5cE9E37DE64F5D1a1721712519F10BFC16AAC864;
-        address oracleRouterAddress = 0x8f86bFc69a9A8bfEceB81f02B8A34327a785b58b;
+        bool setAssets = true;
+        bool setAssetPriceFeeds = true;
+        bool deployStakingVaults = false;
+        bool deployStrategies = true;
+        bool setAssetStrategies = true;
+        bool setLTToken = false;
+
+        /* string memory rpcUrl = vm.rpcUrl(); 
+        console.log("Using RPC URL:", rpcUrl); */
+        uint256 deployerPrivateKey;
+        address owner;
+        address vaultAddress;
+        address bentoUSDAddress;
+        address oracleRouterAddress;
+        address DAIAddress;
+        address USDCAddress;
+        address USDTAddress;
+        address USDeAddress;
+        uint32 DAIWeight;
+        uint32 USDCWeight;
+        uint32 USDTWeight;
+        uint32 USDeWeight;
+        address DAI_USD_FEED;
+        address USDC_USD_FEED;
+        address USDT_USD_FEED;
+        address USDe_USD_FEED;
+        address sDAIAddress;
+        address sUSDCAddress;
+        address sUSDTAddress;
+        address sUSDeAddress;
+        uint8 DAI_decimals;
+        uint8 USDC_decimals;
+        uint8 USDT_decimals;
+        uint8 USDe_decimals;
+        address USDC_Strategy;
+        address DAI_Strategy;
+        address USDT_Strategy;
+        address USDe_Strategy;
+        /* if (rpcUrl == vm.envString("TenderlyMainnetRPC"))  */
+        if (true) {
+            // Load private key and addresses
+            deployerPrivateKey = vm.envUint("BentoMainnetDeployerPrivateKey");
+            owner = vm.addr(deployerPrivateKey);
+            // Contract addresses - replace with your deployed addresses
+            vaultAddress = 0x2DC4Da4832604f886A81120dB11108057f6D6BAf; // From your deployment
+            bentoUSDAddress = 0xfeD4BB1f4Ce7C74e23BE2B968E2962431726d4f3;
+            oracleRouterAddress = 0x8274713D419da3531DfAe1e9ed89d6F9c359cc4d;
+            DAIAddress = Addresses.DAI;
+            USDCAddress = Addresses.USDC;
+            USDTAddress = Addresses.USDT;
+            USDeAddress = Addresses.USDe;
+            DAIWeight = 250;
+            USDCWeight = 375;
+            USDTWeight = 125;
+            USDeWeight = 250;
+            DAI_USD_FEED = Addresses.DAI_USD_FEED;
+            USDC_USD_FEED = Addresses.USDC_USD_FEED;
+            USDT_USD_FEED = Addresses.USDT_USD_FEED;
+            USDe_USD_FEED = Addresses.USDe_USD_FEED;
+            DAI_decimals = 18;
+            USDC_decimals = 6;
+            USDT_decimals = 6;
+            USDe_decimals = 18;
+            sDAIAddress = Addresses.sDAI;
+            sUSDCAddress = Addresses.sUSDC;
+            sUSDTAddress = Addresses.sUSDT;
+            sUSDeAddress = Addresses.sUSDe;
+            
+
+        }
+
         VaultCore vault = VaultCore(vaultAddress);
         console.log("Vault address:", vaultAddress);
+        BentoUSD bentoUSD = BentoUSD(bentoUSDAddress);
 
         vm.startBroadcast(deployerPrivateKey);
+        console.log("owner address:", owner);
         if (setBentoUSD) {
+            console.log("governor is:", vault.governor());
+            console.log("bentoUSDVault is:", bentoUSD.bentoUSDVault());
+            
+            console.log("Setting bentoUSD to:", bentoUSDAddress); 
+            console.log("Current bentoUSD is:", vault.bentoUSD());
             vault.setBentoUSD(bentoUSDAddress);
         }
 
@@ -51,29 +116,29 @@ contract SetupVault is Script {
         if (setAssetPriceFeeds) {
             // Sepolia addresses from Addresses.sol
             oracleRouter.addFeed(
-                Addresses.SEPOLIA_DAI,
-                Addresses.SEPOLIA_DAI_USD_FEED,
+                DAIAddress,
+                DAI_USD_FEED,
                 86400, // 1 day staleness
                 8     // decimals
             );
 
             oracleRouter.addFeed(
-                Addresses.SEPOLIA_USDC,
-                Addresses.SEPOLIA_USDC_USD_FEED,
+                USDCAddress,
+                USDC_USD_FEED,
                 86400,
                 8
             );
 
             oracleRouter.addFeed(
-                Addresses.SEPOLIA_USDT,
-                Addresses.SEPOLIA_USDT_USD_FEED,
+                USDTAddress,
+                USDT_USD_FEED,
                 86400,
                 8
             );
 
             oracleRouter.addFeed(
-                Addresses.SEPOLIA_USDe,
-                Addresses.SEPOLIA_USDe_USD_FEED,
+                USDeAddress,
+                USDe_USD_FEED,
                 86400,
                 8
                 );
@@ -85,58 +150,57 @@ contract SetupVault is Script {
         if (setAssets) {
             // Set assets with equal weights (25% each)
             vault.setAsset(
-            Addresses.SEPOLIA_USDC,
-            18,      // USDC decimals
-            375,     // 25% weight
-            address(0)  // No LT token initially
+            USDCAddress,
+            USDC_decimals,      // USDC decimals
+            USDCWeight,     // 25% weight
+            sUSDCAddress
         );
 
         vault.setAsset(
-            Addresses.SEPOLIA_DAI,
-            18,     // DAI decimals
-            250,     // 25% weight
-            address(0)
+            DAIAddress,
+            DAI_decimals,     // DAI decimals
+            DAIWeight,     // 25% weight
+            sDAIAddress
         );
 
         vault.setAsset(
-            Addresses.SEPOLIA_USDT,
-            18,      // USDT decimals
-            125,     // 25% weight
-            address(0)
+            USDTAddress,
+            USDT_decimals,      // USDT decimals
+            USDTWeight,     // 25% weight
+            sUSDTAddress
         );
 
         vault.setAsset(
-            Addresses.SEPOLIA_USDe,
-            18,     // USDe decimals
-            250,     // 25% weight
-            address(0)
+            USDeAddress,
+            USDe_decimals,     // USDe decimals
+            USDeWeight,     // 25% weight
+            sUSDeAddress
             );
         }
         address USDC_Vault = address(0);
         address DAI_Vault = address(0);
         address USDT_Vault = address(0);
         address USDe_Vault = address(0);
-        address USDC_Strategy = address(0);
-        address DAI_Strategy = address(0);
-        address USDT_Strategy = address(0);
-        address USDe_Strategy = address(0);
-        if (deployStrategies) {
+        if (deployStakingVaults) {
             USDC_Vault = address(new TestERC4626(IERC20(Addresses.SEPOLIA_USDC), "sUSDC", "sUSDC"));
             DAI_Vault = address(new TestERC4626(IERC20(Addresses.SEPOLIA_DAI), "sDAI", "sDAI"));
             USDT_Vault = address(new TestERC4626(IERC20(Addresses.SEPOLIA_USDT), "sUSDT", "sUSDT"));
             USDe_Vault = address(new TestERC4626(IERC20(Addresses.SEPOLIA_USDe), "sUSDe", "sUSDe"));
+        }
 
-            USDC_Strategy = address(new Generalized4626Strategy(Addresses.SEPOLIA_USDC, USDC_Vault, address(vault)));
-            DAI_Strategy = address(new Generalized4626Strategy(Addresses.SEPOLIA_DAI, DAI_Vault, address(vault)));
-            USDT_Strategy = address(new Generalized4626Strategy(Addresses.SEPOLIA_USDT, USDT_Vault, address(vault)));
-            USDe_Strategy = address(new Generalized4626Strategy(Addresses.SEPOLIA_USDe, USDe_Vault, address(vault)));
+        if (deployStrategies) {
+            
+            USDC_Strategy = address(new Generalized4626Strategy(USDCAddress, sUSDCAddress, address(vault)));
+            DAI_Strategy = address(new Generalized4626Strategy(DAIAddress, sDAIAddress, address(vault)));
+            USDT_Strategy = address(new Generalized4626Strategy(USDTAddress, sUSDTAddress, address(vault)));
+            USDe_Strategy = address(new Generalized4626Strategy(USDeAddress, sUSDeAddress, address(vault)));
 
         }
         if (setAssetStrategies) {
-            vault.setStrategy(Addresses.SEPOLIA_USDC, USDC_Strategy);
-            vault.setStrategy(Addresses.SEPOLIA_DAI, DAI_Strategy);
-            vault.setStrategy(Addresses.SEPOLIA_USDT, USDT_Strategy);
-            vault.setStrategy(Addresses.SEPOLIA_USDe, USDe_Strategy);
+            vault.setStrategy(USDCAddress, USDC_Strategy);
+            vault.setStrategy(DAIAddress, DAI_Strategy);
+            vault.setStrategy(USDTAddress, USDT_Strategy);
+            vault.setStrategy(USDeAddress, USDe_Strategy);
         }
 
         if (setLTToken) {

@@ -6,13 +6,17 @@ library Addresses {
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant sDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public constant sUSDC = 0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB;
     address public constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
+    address public constant sUSDT = 0xbEef047a543E45807105E51A8BBEFCc5950fcfBa;
     address public constant USDe = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
+    address public constant sUSDe = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
+
     address public constant sDAI_USD_FEED = 0x73366a099E198b828E6023232990e16406673607;
     address public constant DAI_USD_FEED = 0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9;
     address public constant USDC_USD_FEED = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
     address public constant USDT_USD_FEED = 0x3E7d1eAB13ad0104d2750B8863b489D65364e32D;
-    address public constant USDE_USD_FEED = 0xa569d910839Ae8865Da8F8e70FfFb0cBA869F961;
+    address public constant USDe_USD_FEED = 0xa569d910839Ae8865Da8F8e70FfFb0cBA869F961;
 
     // Sepolia addresses
     address public constant SEPOLIA_DAI = 0x4F12d4e3FE59Ad54f7e9704B71467eB368b2F498;

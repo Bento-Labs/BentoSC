@@ -6,13 +6,15 @@ import "../src/vault/VaultCore.sol";
 import "../src/BentoUSD.sol";
 import "../src/OracleRouter.sol";
 import "../src/UpgradableProxy.sol";
+import "../src/BentoUSDPlus.sol";
 
 contract DeployVault is Script {
     function run() external {
-        bool deployNewBentoUSDFlag = true;
+        bool deployNewBentoUSDFlag = false;
         bool deployNewOracleRouterFlag = false;
-        bool deployNewVaultFlag = true;
-        bool setBentoUSDVaultFlag = true;
+        bool deployNewVaultFlag = false;
+        bool setBentoUSDVaultFlag = false;
+        bool deployBentoUSDPlusFlag = true;
         uint256 deployerPrivateKey = vm.envUint("BentoSepoliaDeployerPrivateKey");
         address owner = vm.addr(deployerPrivateKey);
         
@@ -24,7 +26,7 @@ contract DeployVault is Script {
         
         vm.startBroadcast(deployerPrivateKey);
 
-        BentoUSD bentoUSD = BentoUSD(0x6ae08082387AaBcA74830054B1f3ba8a0571F9c6);
+        BentoUSD bentoUSD = BentoUSD(0xfeD4BB1f4Ce7C74e23BE2B968E2962431726d4f3);
         if (deployNewBentoUSDFlag) {
             // Deploy BentoUSD implementation
             bentoUSD= new BentoUSD(
@@ -39,7 +41,7 @@ contract DeployVault is Script {
         }
 
         // Deploy OracleRouter
-        OracleRouter oracle = OracleRouter(0x8f86bFc69a9A8bfEceB81f02B8A34327a785b58b);
+        OracleRouter oracle = OracleRouter(0x8274713D419da3531DfAe1e9ed89d6F9c359cc4d);
         if (deployNewOracleRouterFlag) {
             oracle = new OracleRouter(owner);
             console.log(" new OracleRouter deployed at:", address(oracle));
@@ -48,7 +50,7 @@ contract DeployVault is Script {
         }
 
         // Deploy VaultCore implementation
-        UpgradableProxy vaultProxy = UpgradableProxy(payable(0x8FDE145B1289a99C6B15f363309d3cc9276c0b16));
+        UpgradableProxy vaultProxy = UpgradableProxy(payable(0x2DC4Da4832604f886A81120dB11108057f6D6BAf));
         VaultCore vaultImpl = VaultCore(0xB001e62bA3c8B4797aC1D6950d723b627737a92E);
         if (deployNewVaultFlag) {
             vaultImpl = new VaultCore();
@@ -80,6 +82,14 @@ contract DeployVault is Script {
             console.log("Vault in BentoUSD set to:", address(vaultProxy));
         } else {
             console.log("Vault in BentoUSD already set to:", address(vaultProxy));
+        }
+
+        if (deployBentoUSDPlusFlag) {
+            // Deploy BentoUSDPlus
+            BentoUSDPlus bentoUSDPlus = new BentoUSDPlus(
+                IERC20(bentoUSD)
+            );
+            console.log("BentoUSDPlus deployed at:", address(bentoUSDPlus));
         }
 
         vm.stopBroadcast();

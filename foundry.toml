@@ -37,3 +37,4 @@ sepolia = "${SepoliaRPC}"
 [etherscan]
 mainnet = { key = "${EtherscanApiKey}" }
 sepolia = { key = "${EtherscanApiKey}" }
+tenderlyMainnet = { key = "${EtherscanApiKey}" }
