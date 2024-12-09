@@ -335,16 +335,13 @@ contract VaultCore is Initializable, VaultAdmin {
         return totalValue;
     }
 
-    function getBalances() public view returns (uint256[] memory) {
+    function getTokenToShareRatios() public view returns (uint256[] memory) {
         uint256 allAssetsLength = allAssets.length;
-        uint256[] memory balances = new uint256[](allAssetsLength);
-        for (uint256 i = 0; i < allAssetsLength; i+=2) {
-            address asset = allAssets[i];
-            uint256 balance = IERC20(asset).balanceOf(address(this));
-            uint256 ltBalance = IERC20(assets[asset].ltToken).balanceOf(address(this));
-            balances[i] = balance;
-            balances[i+1] = ltBalance;
+        uint256[] memory ratios = new uint256[](allAssetsLength);
+        for (uint256 i = 0; i < allAssetsLength; i++) {
+            address vault = assets[allAssets[i]].ltToken;
+            ratios[i] = IERC4626(vault).convertToShares(1e18);
         }
-        return balances;
+        return ratios;
     }
 }
