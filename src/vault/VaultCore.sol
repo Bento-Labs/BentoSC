@@ -142,7 +142,7 @@ contract VaultCore is Initializable, VaultAdmin {
         uint256 totalAmount = 0;
         for (uint256 i = 0; i < numberOfAssets; i++) {
             // we round it upwards to avoid rounding errors detrimental for the protocol
-            amounts[i] = (desiredAmount * relativeWeights[i]) / (totalRelativeWeight * 1e18);
+            amounts[i] = (desiredAmount * relativeWeights[i]) / totalRelativeWeight;
             totalAmount += amounts[i];
         }
         return (amounts, totalAmount);
@@ -311,5 +311,40 @@ contract VaultCore is Initializable, VaultAdmin {
             return amount * 10 ** (assetDecimals - 18);
         }
         return amount;
+    }
+
+    function getTotalValue() public view returns (uint256) {
+        uint256 totalValue = 0;
+        for (uint256 i = 0; i < allAssets.length; i++) {
+            address asset = allAssets[i];
+            // Get direct asset balance
+            uint256 balance = IERC20(asset).balanceOf(address(this));
+            
+            // Get LT token balance and convert to underlying
+            address ltToken = assets[asset].ltToken;
+            uint256 ltBalance = IERC20(ltToken).balanceOf(address(this));
+            uint256 underlyingBalance = IERC4626(ltToken).convertToAssets(ltBalance);
+            
+            // Get total balance (direct + underlying from LT)
+            uint256 totalBalance = balance + underlyingBalance;
+            
+            // Multiply by price to get USD value
+            uint256 assetPrice = IOracle(oracleRouter).price(asset);
+            totalValue += (totalBalance * assetPrice) / 1e18;
+        }
+        return totalValue;
+    }
+
+    function getBalances() public view returns (uint256[] memory) {
+        uint256 allAssetsLength = allAssets.length;
+        uint256[] memory balances = new uint256[](allAssetsLength);
+        for (uint256 i = 0; i < allAssetsLength; i+=2) {
+            address asset = allAssets[i];
+            uint256 balance = IERC20(asset).balanceOf(address(this));
+            uint256 ltBalance = IERC20(assets[asset].ltToken).balanceOf(address(this));
+            balances[i] = balance;
+            balances[i+1] = ltBalance;
+        }
+        return balances;
     }
 }

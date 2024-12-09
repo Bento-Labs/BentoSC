@@ -15,7 +15,7 @@ contract UpdateVaultImplementation is Script {
         address owner = vm.addr(deployerPrivateKey);
         
         // Contract addresses
-        address proxyAddress = 0x8FDE145B1289a99C6B15f363309d3cc9276c0b16;
+        address proxyAddress = 0x2DC4Da4832604f886A81120dB11108057f6D6BAf;
         UpgradableProxy proxy = UpgradableProxy(payable(proxyAddress));
         
         console.log("current operator address:", owner);
@@ -24,7 +24,7 @@ contract UpdateVaultImplementation is Script {
         console.log("Current proxy owner:", proxy.proxyOwner());
         
         // Check if there's an ongoing upgrade
-        address newImplementation = 0xc10670238ca1898AA22504CDa344cf4262649651;
+        address newImplementation = 0x68A610FA4766952c91A35BbeDf3f6A02065eCacB;
         vm.startBroadcast(deployerPrivateKey);
 
         if (deployNewImplementation) {

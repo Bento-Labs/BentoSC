@@ -95,10 +95,10 @@ contract VaultCoreTest is Test {
         oracleRouter.addFeed(USDE, USDE_USD_FEED, 86400, 8);
 
         console.log("Setting assets in vault...");
-        vault.setAsset(USDC, 6, 25, address(0));   // 25% weight
-        vault.setAsset(DAI, 18, 25, address(0));   // 25% weight
-        vault.setAsset(USDT, 6, 25, address(0));   // 25% weight
-        vault.setAsset(USDE, 18, 25, address(0));  // 25% weight
+        vault.setAsset(USDC, 6, 375, address(0));   // 25% weight
+        vault.setAsset(DAI, 18, 250, address(0));   // 25% weight
+        vault.setAsset(USDT, 6, 125, address(0));   // 25% weight
+        vault.setAsset(USDE, 18, 250, address(0));  // 25% weight
 
         console.log("Dealing tokens to user...");
         deal(USDC, user, 1000e6);
@@ -118,8 +118,8 @@ contract VaultCoreTest is Test {
     }
 
     function testMintBasket() public {
-        uint256 mintAmount = 1000e18; // 1000 BentoUSD
-        uint256 minAmount = 990e18;   // 0.99% slippage
+        uint256 mintAmount = 10e18; // 10 BentoUSD
+        uint256 minAmount = 99e17;   // 0.99% slippage
 
         vm.startPrank(user);
         
