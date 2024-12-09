@@ -8,9 +8,10 @@ import "../src/UpgradableProxy.sol";
 
 contract UpdateVaultImplementation is Script {
     function run() external {
-        bool deployNewImplementation = false;
+        
+        bool deployNewImplementation = true;
         bool setNewImplementation = false;
-        bool transferImplementation = true;
+        bool transferImplementation = false;
         uint256 deployerPrivateKey = vm.envUint("BentoSepoliaDeployerPrivateKey");
         address owner = vm.addr(deployerPrivateKey);
         
@@ -32,6 +33,15 @@ contract UpdateVaultImplementation is Script {
             VaultCore newImplementationContract = new VaultCore();
             console.log("New implementation deployed at:", address(newImplementationContract));
             newImplementation = address(newImplementationContract);
+            
+            // Write deployment addresses to file
+            string memory deploymentData = string.concat(
+                '{\n',
+                '    "vaultImplementation": "', vm.toString(address(newImplementationContract)), '"\n',
+                '}'
+            );
+            vm.writeFile("deployments/sepolia.json", deploymentData);
+            console.log("Deployment addresses written to deployments/sepolia.json");
         }
 
         if (setNewImplementation) {
